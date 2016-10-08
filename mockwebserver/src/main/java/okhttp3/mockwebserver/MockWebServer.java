@@ -877,6 +877,17 @@ public final class MockWebServer implements TestRule, Closeable {
         logger.info(MockWebServer.this + " received request: " + request
             + " and responded: " + response + " protocol is " + protocol.toString());
       }
+
+      if (response.getSocketPolicy() == DISCONNECT_AT_END) {
+        Http2Connection connection = stream.getConnection();
+        connection.shutdown(ErrorCode.NO_ERROR);
+        try {
+          Thread.sleep(response.getShutdownDelay(TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+          throw new InterruptedIOException();
+        }
+        connection.close();
+      }
     }
 
     private RecordedRequest readRequest(Http2Stream stream) throws IOException {
